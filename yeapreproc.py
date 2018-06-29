@@ -5,6 +5,8 @@ import pandas as pd
 import sys
 import re
 
+from collections import defaultdict, OrderedDict
+
 from math import sqrt
 
 translations = {
@@ -42,6 +44,13 @@ def fix_headers(df):
 def translate(name, d):
     return d.get(name) or name
 
+def getSpecies(model, typeIds):
+    species = dict()
+    for sp in model.getListOfSpecies():
+        if sp.getSpeciesType() in typeIds and sp.getCompartment() == "c_03":
+            species[sp.getSpeciesType()] = sp.getId()
+    return species
+
 
 csv = sys.argv[1]
 
@@ -59,7 +68,7 @@ model = document.getModel()
 species = model.getListOfSpeciesTypes()
 targetNames = df["meta", "Metabolites"].tolist()
 
-ids = set()
+ids = OrderedDict()
 missing = set(targetNames)
 for sp in species :
     for target in targetNames:
@@ -67,7 +76,7 @@ for sp in species :
                     translate(target, translations),
                     re.IGNORECASE):
             print(sp.getName(), sp.getId())
-            ids.add(sp.getId())
+            ids[target] = sp.getId()
             if target in missing :
                 missing.remove(target)
 
@@ -76,4 +85,20 @@ print(len(ids))
 
 print(missing)
 
-model.getListOfSpeciesTypes()
+species = getSpecies(model, ids.values())
+
+
+# print(set([sp.split()[-1] for sp in sum(species.values())]))
+
+print (species)
+
+print(len(species))
+
+sIds = [species[ids[target]] for target in targetNames]
+print(sIds)
+
+se = pd.Series(sIds)
+df['meta', 'sid'] = se
+print(df)
+df = df.sort_index(1, 0, ascending=False)
+df.to_csv("processed_" + csv)
