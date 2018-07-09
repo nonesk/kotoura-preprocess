@@ -101,4 +101,9 @@ se = pd.Series(sIds)
 df['meta', 'sid'] = se
 print(df)
 df = df.sort_index(1, 0, ascending=False)
+df.columns = ['_'.join(col) for col in df.columns.values]
 df.to_csv("processed_" + csv)
+
+print(model.getNumSpecies())
+print(model.getNumReactions())
+print(model.getNumCompartments())
